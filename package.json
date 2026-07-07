@@ -1,0 +1,39 @@
+{
+  "name": "vscode-opencode-aibp",
+  "displayName": "OpenCode AIBP Sender",
+  "version": "0.1.0",
+  "description": "在 VSCode 中选中代码/文本，附上指令，一键发送到终端中正在运行的 OpenCode",
+  "publisher": "local",
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-opencode-aibp.send",
+        "title": "💬 发送给 OpenCode"
+      },
+      {
+        "command": "vscode-opencode-aibp.sendInput",
+        "title": "OpenCode: 发送输入文档"
+      }
+    ],
+    "keybindings": []
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.3.0"
+  }
+}
