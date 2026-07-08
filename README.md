@@ -5,11 +5,13 @@
 ## 使用方式
 
 1. 在编辑器中**选中文本**
-2. 按 **`Cmd+.`**（macOS）/ **`Ctrl+.`**（Windows）→ 选择「💬 发送给 OpenCode」
+2. 点击「快速修复」灯泡 → 选择「💬 发送给 OpenCode」
 3. 在打开的临时文件中**编辑指令**（所见即发送）
 4. 点击状态栏 **$(send) 发送给 OpenCode** 按钮
 
-> 临时文件发送后自动关闭，不弹保存提示，焦点回到原编辑器。
+![](./screenshots/shot_1.png)
+![](./screenshots/shot_2.png)
+![](./screenshots/shot_3.png)
 
 ## 前置条件
 
@@ -19,7 +21,17 @@ OpenCode 端需要安装 AIBP 接收插件：
 opencode plugin aibp-opencode -g
 ```
 
-安装后重启 OpenCode，底部状态栏出现 `● Alpha` 即就绪。
+### 手动配置
+
+编辑 `~/.config/opencode/tui.json`：
+```json
+{
+    "$schema": "https://opencode.ai/tui.json",
+    "plugin": ["aibp-opencode"]
+}
+```
+
+安装后重启 OpenCode，底部状态栏出现 `● Alpha` 或 `● Bravo` 之类的标识即就绪。
 
 ## 特性
 
