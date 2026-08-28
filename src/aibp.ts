@@ -10,7 +10,6 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
 import * as net from "net";
 
 // ===== 常量 =====

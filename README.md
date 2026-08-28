@@ -1,13 +1,13 @@
-# OpenCode AIBP Sender
+# OpenCode to AIBP
 
-在 VSCode 中选中代码，一键发送到终端中正在运行的 OpenCode，附带你的指令。
+在 VSCode 中选中代码，一键发送到终端中正在运行的 OpenCode、pi，附带你的指令。
 
 ## 使用方式
 
 1. 在编辑器中**选中文本**
-2. 点击「快速修复」灯泡 → 选择「💬 发送给 OpenCode」
+2. 点击「快速修复」灯泡 → 选择「💬 发送给 AIBP」
 3. 在打开的临时文件中**编辑指令**（所见即发送）
-4. 点击状态栏 **$(send) 发送给 OpenCode** 按钮
+4. 点击状态栏 **$(send) 发送给 AIBP** 按钮
 
 ![](./screenshots/shot_1.png)
 ![](./screenshots/shot_2.png)
@@ -19,6 +19,11 @@ OpenCode 端需要安装 AIBP 接收插件：
 
 ```bash
 opencode plugin aibp-opencode -g
+```
+
+PI 需要安装：
+```bash
+pi install npm:aibp-pi
 ```
 
 ### 手动配置

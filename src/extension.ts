@@ -2,7 +2,7 @@
  * VSCode OpenCode AIBP Sender — 扩展入口
  *
  * 触发:
- *   Cmd+. / Ctrl+. 代码操作菜单 → 「💬 发送给 OpenCode」
+ *   Cmd+. / Ctrl+. 代码操作菜单 → 「💬 发送给 AIBP」
  *   Shift+Alt+Enter 快捷键
  *
  * 流程:
@@ -19,7 +19,7 @@ import * as path from "path";
 import { discoverAsync, send, RegFile, ContextPayload, Selection } from "./aibp";
 
 const OPCODE_SEND_KIND = vscode.CodeActionKind.QuickFix;
-const CONTEXT_KEY_INPUT_OPEN = "vscodeOpencodeAibpInputOpen";
+const CONTEXT_KEY_INPUT_OPEN = "vscodeToAibpInputOpen";
 
 let cachedReceiver: { name: string; socket: string } | null = null;
 
@@ -42,11 +42,11 @@ async function setInputContext(open: boolean) {
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-    vscode.commands.registerCommand("vscode-opencode-aibp.send", () => openInputDocument())
+    vscode.commands.registerCommand("vscode-to-aibp.send", () => openInputDocument())
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("vscode-opencode-aibp.sendInput", () => sendFromInputDocument())
+    vscode.commands.registerCommand("vscode-to-aibp.sendInput", () => sendFromInputDocument())
   );
 
   context.subscriptions.push(
@@ -80,8 +80,8 @@ class OpenCodeCodeActionProvider implements vscode.CodeActionProvider {
     _token: vscode.CancellationToken
   ): vscode.CodeAction[] {
     if (range.isEmpty) return [];
-    const action = new vscode.CodeAction("💬 发送给 OpenCode", OPCODE_SEND_KIND);
-    action.command = { command: "vscode-opencode-aibp.send", title: "发送给 OpenCode" };
+    const action = new vscode.CodeAction("💬 发送给 AIBP", OPCODE_SEND_KIND);
+    action.command = { command: "vscode-to-aibp.send", title: "发送给 AIBP" };
     action.isPreferred = true;
     return [action];
   }
@@ -92,7 +92,7 @@ class OpenCodeCodeActionProvider implements vscode.CodeActionProvider {
 async function openInputDocument() {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    vscode.window.showErrorMessage("OpenCode AIBP: 没有打开的编辑器");
+    vscode.window.showErrorMessage("AIBP: 没有打开的编辑器");
     return;
   }
 
@@ -100,7 +100,7 @@ async function openInputDocument() {
   const receivers = await discoverAsync();
   if (receivers.length === 0) {
     const action = await vscode.window.showErrorMessage(
-      "没有发现正在运行的 OpenCode 实例。请先启动 OpenCode（终端中运行 opencode）。",
+      "没有发现正在运行的 AIBP 实例。请先在 OpenCode 或 Pi 中集成 AIBP。",
       "重试"
     );
     if (action === "重试") return openInputDocument();
@@ -145,7 +145,7 @@ async function openInputDocument() {
   // 4. 创建临时文件（替代 untitled 文档，消除 dirty 保存提示）
   const tempFilePath = path.join(
     os.tmpdir(),
-    `opencode-input-${Date.now()}.md`
+    `aibp-input-${Date.now()}.md`
   );
   await vscode.workspace.fs.writeFile(
     vscode.Uri.file(tempFilePath),
@@ -166,9 +166,9 @@ async function openInputDocument() {
   if (inputDocCount === 0) {
     await setInputContext(true);
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.text = `$(send) 发送给 OpenCode [${receiver.name}]`;
+    statusBarItem.text = `$(send) 发送给 AIBP [${receiver.name}]`;
     statusBarItem.tooltip = "点击发送 · 关闭取消";
-    statusBarItem.command = "vscode-opencode-aibp.sendInput";
+    statusBarItem.command = "vscode-to-aibp.sendInput";
     statusBarItem.show();
   }
   inputDocCount++;
@@ -191,7 +191,7 @@ async function resolveReceiver(
     receiver: r,
   }));
   const picked = await vscode.window.showQuickPick(items, {
-    placeHolder: "选择要发送的 OpenCode 实例",
+    placeHolder: "选择要发送的 AIBP 实例",
     matchOnDescription: true,
   });
   return picked?.receiver;
@@ -218,7 +218,7 @@ async function sendFromInputDocument() {
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: `正在发送给 OpenCode [${receiver.name}]...`,
+      title: `正在发送给 AIBP [${receiver.name}]...`,
       cancellable: false,
     },
     async () => {
@@ -248,7 +248,7 @@ async function sendFromInputDocument() {
     preserveFocus: false,
   });
 
-  vscode.window.showInformationMessage(`✓ 已发送给 OpenCode [${receiver.name}]`);
+  vscode.window.showInformationMessage(`✓ 已发送给 AIBP [${receiver.name}]`);
 }
 
 // ===== 清理 =====
