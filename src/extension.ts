@@ -28,7 +28,6 @@ let outputChannel: vscode.OutputChannel | undefined;
 interface InputDocMeta {
   receiver: RegFile;
   contextPayload: ContextPayload;
-  sourceEditor: vscode.TextEditor;
   tempFilePath: string;
 }
 
@@ -99,6 +98,8 @@ class OpenCodeCodeActionProvider implements vscode.CodeActionProvider {
 // ===== 打开输入文档 =====
 
 async function openInputDocument() {
+  if (await showExistingInputDocument()) return;
+
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showErrorMessage("AIBP: 没有打开的编辑器");
@@ -169,7 +170,6 @@ async function openInputDocument() {
   inputDocMetas.set(uri, {
     receiver,
     contextPayload,
-    sourceEditor: editor,
     tempFilePath,
   });
 
@@ -190,6 +190,15 @@ async function openInputDocument() {
     new vscode.Range(end, end),
     vscode.TextEditorRevealType.InCenterIfOutsideViewport
   );
+}
+
+async function showExistingInputDocument(): Promise<boolean> {
+  const existingUri = inputDocMetas.keys().next().value;
+  if (!existingUri) return false;
+
+  const inputDoc = await vscode.workspace.openTextDocument(vscode.Uri.parse(existingUri));
+  await vscode.window.showTextDocument(inputDoc, { preview: false });
+  return true;
 }
 
 async function resolveReceiver(
@@ -257,7 +266,7 @@ async function sendFromInputDocument() {
   const meta = inputDocMetas.get(uri);
   if (!meta) return;
 
-  const { receiver, contextPayload, sourceEditor, tempFilePath } = meta;
+  const { receiver, contextPayload, tempFilePath } = meta;
   const message = extractUserMessage(editor.document.getText(), contextPayload.selection);
   if (message === undefined) {
     vscode.window.showErrorMessage("AIBP: 请保留“---下面为用户输入内容---”分隔线，并在其下方填写补充内容。");
@@ -296,12 +305,6 @@ async function sendFromInputDocument() {
   if (tab) {
     await vscode.window.tabGroups.close(tab);
   }
-
-  // 焦点回到原编辑器
-  await vscode.window.showTextDocument(sourceEditor.document, {
-    viewColumn: sourceEditor.viewColumn,
-    preserveFocus: false,
-  });
 
   vscode.window.showInformationMessage(`✓ 已发送给 AIBP [${receiver.name}]`);
 }
