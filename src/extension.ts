@@ -50,6 +50,10 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("vscode-to-aibp.switchReceiver", () => switchReceiver())
+  );
+
+  context.subscriptions.push(
     vscode.languages.registerCodeActionsProvider("*", new OpenCodeCodeActionProvider(), {
       providedCodeActionKinds: [OPCODE_SEND_KIND],
     })
@@ -166,8 +170,8 @@ async function openInputDocument() {
   if (inputDocCount === 0) {
     await setInputContext(true);
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.text = `$(send) 发送给 AIBP [${receiver.name}]`;
-    statusBarItem.tooltip = "点击发送 · 关闭取消";
+    updateStatusBarReceiver(receiver);
+    statusBarItem.tooltip = "点击发送 · 关闭取消；可通过命令面板切换接收实例";
     statusBarItem.command = "vscode-to-aibp.sendInput";
     statusBarItem.show();
   }
@@ -184,6 +188,14 @@ async function resolveReceiver(
     if (found) return found;
     cachedReceiver = null;
   }
+
+  return pickReceiver(receivers, "选择要发送的 AIBP 实例");
+}
+
+async function pickReceiver(
+  receivers: RegFile[],
+  placeHolder: string
+): Promise<RegFile | undefined> {
   const items = receivers.map((r) => ({
     label: r.name,
     description: `PID ${r.pid}`,
@@ -191,10 +203,36 @@ async function resolveReceiver(
     receiver: r,
   }));
   const picked = await vscode.window.showQuickPick(items, {
-    placeHolder: "选择要发送的 AIBP 实例",
+    placeHolder,
     matchOnDescription: true,
   });
   return picked?.receiver;
+}
+
+async function switchReceiver() {
+  const receivers = await discoverAsync();
+  if (receivers.length === 0) {
+    vscode.window.showErrorMessage("没有发现正在运行的 AIBP 实例。");
+    return;
+  }
+
+  const receiver = await pickReceiver(receivers, "选择要切换到的 AIBP 实例");
+  if (!receiver) return;
+
+  cachedReceiver = { name: receiver.name, socket: receiver.socket };
+
+  for (const meta of inputDocMetas.values()) {
+    meta.receiver = receiver;
+  }
+  updateStatusBarReceiver(receiver);
+
+  vscode.window.showInformationMessage(`已切换 AIBP 实例为 [${receiver.name}]`);
+}
+
+function updateStatusBarReceiver(receiver: RegFile) {
+  if (statusBarItem) {
+    statusBarItem.text = `$(send) 发送给 AIBP [${receiver.name}]`;
+  }
 }
 
 // ===== 发送 =====

@@ -1,7 +1,7 @@
 {
   "name": "vscode-to-aibp",
   "displayName": "VSCode send message to AIBP",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "在 VSCode 中选中代码/文本，附上指令，一键发送到终端中正在运行 AIBP 的 agent，例如 opencode、pi 等，采用 AIBP 协议",
   "publisher": "someok",
   "license": "MIT",
@@ -38,6 +38,10 @@
       {
         "command": "vscode-to-aibp.sendInput",
         "title": "AIBP: 发送输入文档"
+      },
+      {
+        "command": "vscode-to-aibp.switchReceiver",
+        "title": "AIBP: 切换接收实例"
       }
     ],
     "keybindings": []
