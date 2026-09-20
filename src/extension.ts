@@ -20,6 +20,7 @@ import { discoverAsync, send, RegFile, ContextPayload, Selection } from "./aibp"
 
 const OPCODE_SEND_KIND = vscode.CodeActionKind.QuickFix;
 const CONTEXT_KEY_INPUT_OPEN = "vscodeToAibpInputOpen";
+const USER_INPUT_SEPARATOR = "\n\n---下面为用户输入内容---\n\n";
 
 let cachedReceiver: { name: string; socket: string } | null = null;
 
@@ -122,7 +123,7 @@ async function openInputDocument() {
 
   // 3. 收集上下文
   const doc = editor.document;
-  const filePath = vscode.workspace.asRelativePath(doc.uri);
+  const filePath = doc.uri.fsPath;
 
   const cursor = {
     line: editor.selection.active.line + 1,
@@ -136,8 +137,9 @@ async function openInputDocument() {
     selection = {
       start: { line: editor.selection.start.line + 1, col: editor.selection.start.character + 1 },
       end: { line: editor.selection.end.line + 1, col: editor.selection.end.character + 1 },
+      text: selText,
     };
-    initialContent = selText;
+    initialContent = `${selText}${USER_INPUT_SEPARATOR}`;
   }
 
   const contextPayload: ContextPayload = {
@@ -177,7 +179,13 @@ async function openInputDocument() {
   }
   inputDocCount++;
 
-  await vscode.window.showTextDocument(inputDoc, { preview: false });
+  const inputEditor = await vscode.window.showTextDocument(inputDoc, { preview: false });
+  const end = inputDoc.positionAt(inputDoc.getText().length);
+  inputEditor.selection = new vscode.Selection(end, end);
+  inputEditor.revealRange(
+    new vscode.Range(end, end),
+    vscode.TextEditorRevealType.InCenterIfOutsideViewport
+  );
 }
 
 async function resolveReceiver(
@@ -246,12 +254,17 @@ async function sendFromInputDocument() {
   if (!meta) return;
 
   const { receiver, contextPayload, sourceEditor, tempFilePath } = meta;
-  const message = editor.document.getText().trim();
+  const message = extractUserMessage(editor.document.getText(), contextPayload.selection);
+  if (message === undefined) {
+    vscode.window.showErrorMessage("AIBP: 请保留“---下面为用户输入内容---”分隔线，并在其下方填写补充内容。");
+    return;
+  }
 
   const payload: ContextPayload = {
     ...contextPayload,
     message: message || undefined,
   };
+  console.log("[vscode-to-aibp] 发送 payload:", payload);
 
   await vscode.window.withProgress(
     {
@@ -287,6 +300,15 @@ async function sendFromInputDocument() {
   });
 
   vscode.window.showInformationMessage(`✓ 已发送给 AIBP [${receiver.name}]`);
+}
+
+function extractUserMessage(content: string, selection?: Selection): string | undefined {
+  if (!selection?.text) return content.trim();
+
+  const separator = USER_INPUT_SEPARATOR.trim();
+  const separatorIndex = content.lastIndexOf(separator);
+  if (separatorIndex < 0) return undefined;
+  return content.slice(separatorIndex + separator.length).trim();
 }
 
 // ===== 清理 =====
