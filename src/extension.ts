@@ -23,6 +23,7 @@ const CONTEXT_KEY_INPUT_OPEN = "vscodeToAibpInputOpen";
 const USER_INPUT_SEPARATOR = "\n\n---下面为用户输入内容---\n\n";
 
 let cachedReceiver: { name: string; socket: string } | null = null;
+let outputChannel: vscode.OutputChannel | undefined;
 
 interface InputDocMeta {
   receiver: RegFile;
@@ -42,6 +43,9 @@ async function setInputContext(open: boolean) {
 // ── 激活 ──
 
 export function activate(context: vscode.ExtensionContext) {
+  outputChannel = vscode.window.createOutputChannel("VSCode to AIBP");
+  context.subscriptions.push(outputChannel);
+
   context.subscriptions.push(
     vscode.commands.registerCommand("vscode-to-aibp.send", () => openInputDocument())
   );
@@ -264,7 +268,7 @@ async function sendFromInputDocument() {
     ...contextPayload,
     message: message || undefined,
   };
-  console.log("[vscode-to-aibp] 发送 payload:", payload);
+  logPayload(payload);
 
   await vscode.window.withProgress(
     {
@@ -300,6 +304,12 @@ async function sendFromInputDocument() {
   });
 
   vscode.window.showInformationMessage(`✓ 已发送给 AIBP [${receiver.name}]`);
+}
+
+function logPayload(payload: ContextPayload) {
+  if (!outputChannel) return;
+  outputChannel.appendLine(`[${new Date().toISOString()}] 发送 payload:`);
+  outputChannel.appendLine(JSON.stringify(payload, null, 2));
 }
 
 function extractUserMessage(content: string, selection?: Selection): string | undefined {
