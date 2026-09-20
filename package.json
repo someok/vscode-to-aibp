@@ -9,7 +9,7 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "package": "npm run compile && vsce package"
   },
   "repository": {
     "type": "git",
