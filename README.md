@@ -1,4 +1,4 @@
-# OpenCode to AIBP
+# VSCode send message to AIBP
 
 在 VSCode 中选中代码，一键发送到终端中正在运行的 OpenCode、pi，附带你的指令。
 
@@ -26,6 +26,7 @@ opencode plugin aibp-opencode -g
 ```
 
 PI 需要安装：
+
 ```bash
 pi install npm:aibp-pi
 ```
@@ -33,10 +34,11 @@ pi install npm:aibp-pi
 ### 手动配置
 
 编辑 `~/.config/opencode/tui.json`：
+
 ```json
 {
-    "$schema": "https://opencode.ai/tui.json",
-    "plugin": ["aibp-opencode"]
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": ["aibp-opencode"]
 }
 ```
 
