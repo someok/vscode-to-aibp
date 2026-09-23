@@ -66,11 +66,16 @@ export function activate(context: vscode.ExtensionContext) {
   // 输入文档关闭时清理（含删除临时文件）
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((doc) => {
-      const uri = doc.uri.toString();
-      const meta = inputDocMetas.get(uri);
-      if (meta) {
-        tryDeleteTempFile(meta.tempFilePath);
-        cleanupInputDoc(uri);
+      cleanupInputDocIfUnused(doc.uri.toString());
+    })
+  );
+
+  // 标签页关闭时清理：扩展自己打开的文档在关闭标签页时不一定触发 onDidCloseTextDocument
+  context.subscriptions.push(
+    vscode.window.tabGroups.onDidChangeTabs((e) => {
+      for (const tab of e.closed) {
+        const uri = getInputDocUriFromTab(tab);
+        if (uri) cleanupInputDocIfUnused(uri);
       }
     })
   );
@@ -193,6 +198,11 @@ async function openInputDocument() {
 }
 
 async function showExistingInputDocument(): Promise<boolean> {
+  // 兜底清理：标签页已关闭、但关闭事件未触发的残留条目
+  for (const uri of [...inputDocMetas.keys()]) {
+    cleanupInputDocIfUnused(uri);
+  }
+
   const existingUri = inputDocMetas.keys().next().value;
   if (!existingUri) return false;
 
@@ -326,6 +336,33 @@ function extractUserMessage(content: string, selection?: Selection): string | un
 
 // ===== 清理 =====
 
+/** 判断输入文档是否仍显示在编辑器标签页中 */
+function isInputDocOpenInTabs(uri: string): boolean {
+  return vscode.window.tabGroups.all.some((group) =>
+    group.tabs.some((tab) => {
+      const input = tab.input;
+      return input instanceof vscode.TabInputText && input.uri.toString() === uri;
+    })
+  );
+}
+
+/** 从标签页取出输入文档 URI（非输入文档返回 undefined） */
+function getInputDocUriFromTab(tab: vscode.Tab): string | undefined {
+  const input = tab.input;
+  if (!(input instanceof vscode.TabInputText)) return undefined;
+  const uri = input.uri.toString();
+  return inputDocMetas.has(uri) ? uri : undefined;
+}
+
+/** 标签页已关闭时清理输入文档：删除临时文件并重置状态 */
+function cleanupInputDocIfUnused(uri: string) {
+  const meta = inputDocMetas.get(uri);
+  if (!meta || isInputDocOpenInTabs(uri)) return;
+  outputChannel?.appendLine(`[${new Date().toISOString()}] 清理输入文档: ${meta.tempFilePath}`);
+  tryDeleteTempFile(meta.tempFilePath);
+  cleanupInputDoc(uri);
+}
+
 function cleanupInputDoc(uri: string) {
   if (!inputDocMetas.has(uri)) return;
   inputDocMetas.delete(uri);
@@ -338,9 +375,8 @@ function cleanupInputDoc(uri: string) {
 }
 
 function tryDeleteTempFile(filePath: string) {
-  try {
-    vscode.workspace.fs.delete(vscode.Uri.file(filePath), { useTrash: false });
-  } catch {
-    // 忽略删除失败
-  }
+  // 异步删除，忽略失败（文件可能已不存在）
+  vscode.workspace.fs.delete(vscode.Uri.file(filePath), { useTrash: false }).then(undefined, () => {
+    /* 忽略删除失败 */
+  });
 }
